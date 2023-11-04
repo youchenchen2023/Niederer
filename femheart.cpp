@@ -71,7 +71,7 @@ class Timeline
 
 
 int main(int argc, char *argv[])
-{
+{  
    MPI_Init(NULL,NULL);   // without specific command line
    int num_ranks, my_rank;
    MPI_Comm_size(COMM_LOCAL,&num_ranks); // number of processes in COMM_LOCAL
@@ -83,6 +83,7 @@ int main(int argc, char *argv[])
    if (my_rank == 0)
    {
       std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
+      std::cout << "some change!!!!" << std::endl;
    }
    
    int order = 1;
