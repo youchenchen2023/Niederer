@@ -21,7 +21,7 @@ public:
 
   std::shared_ptr<mfem::ParGridFunction> p_gf_;
   std::unordered_map<int,mfem::Vector> heartConductivities_;
-  std::unordered_map<int,double> bathConductivities_;
+  //std::unordered_map<int,double> bathConductivities_;
 };
 
 #endif

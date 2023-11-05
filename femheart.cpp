@@ -75,7 +75,8 @@ int main(int argc, char *argv[])
 
    std::vector<std::string> objectFilenames;
    if (argc == 1)
-      objectFilenames.push_back("femheart.data"); //push_back function is used to add an element to the end of the vector.
+      //push_back function is used to add an element to the end of the vector.
+      objectFilenames.push_back("femheart.data"); 
 
    for (int iargCursor=1; iargCursor<argc; iargCursor++)
       objectFilenames.push_back(argv[iargCursor]);
@@ -97,9 +98,9 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
 
    //Fill in the MatrixElementPiecewiseCoefficients
-   //std::vector<int> heartRegions;
-  //objectGet(obj,"heart_regions", heartRegions);
 
+  //std::vector<int> heartRegions;
+  //objectGet(obj,"heart_regions", heartRegions);
    std::vector<double> sigma_m;
    objectGet(obj,"sigma_m",sigma_m);
    //assert(heartRegions.size()*3 == sigma_m.size());
@@ -511,7 +512,7 @@ int main(int argc, char *argv[])
       if (my_rank == 0)
       {  
          double time = (double)(clock()-time_start)/CLOCKS_PER_SEC;
-         std::cout <<"times =" << time << "seconds." << std::endl;
+         std::cout << "times =" << time << "seconds." << std::endl;
          std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
       }
       //if end time, then exit
@@ -549,9 +550,11 @@ int main(int argc, char *argv[])
       itime++;
       first=false;
    }
+   /*
    const char *petscrc_file = "";
    MFEMInitializePetsc(NULL,NULL,petscrc_file,NULL); 
    MFEMFinalizePetsc();
+   */
    // 14. Free the used memory.
    delete M_test;
    delete petscrc_file;
