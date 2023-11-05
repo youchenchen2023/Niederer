@@ -97,12 +97,12 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
 
    //Fill in the MatrixElementPiecewiseCoefficients
-   std::vector<int> heartRegions;
-   objectGet(obj,"heart_regions", heartRegions);
+   //std::vector<int> heartRegions;
+  //objectGet(obj,"heart_regions", heartRegions);
 
    std::vector<double> sigma_m;
    objectGet(obj,"sigma_m",sigma_m);
-   assert(heartRegions.size()*3 == sigma_m.size());
+   //assert(heartRegions.size()*3 == sigma_m.size());
 
    double dt;
    objectGet(obj,"dt",dt,"0.01 ms");
@@ -371,9 +371,10 @@ int main(int argc, char *argv[])
    // Load conductivity data
    MatrixElementPiecewiseCoefficient sigma_m_pos_coeffs(fiber_quat);
    MatrixElementPiecewiseCoefficient sigma_m_neg_coeffs(fiber_quat);
-   for (int ii=0; ii<heartRegions.size(); ii++) {
-      int heartCursor=3*ii;
-      Vector sigma_m_vec(&sigma_m[heartCursor],3);
+   
+   //for (int ii=0; ii<heartRegions.size(); ii++) {
+   //   int heartCursor=3*ii;
+      //Vector sigma_m_vec(&sigma_m[heartCursor],3);
       Vector sigma_m_pos_vec(3);
       Vector sigma_m_neg_vec(3);
       for (int jj=0; jj<3; jj++)
@@ -382,10 +383,9 @@ int main(int argc, char *argv[])
          sigma_m_pos_vec[jj] = value;
          sigma_m_neg_vec[jj] = -value;
       }
-    
-      sigma_m_pos_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_pos_vec;
-      sigma_m_neg_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_neg_vec;
-   }
+      sigma_m_pos_coeffs.heartConductivities_[1] = sigma_m_pos_vec;
+      sigma_m_neg_coeffs.heartConductivities_[1] = sigma_m_neg_vec;
+   //}
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion

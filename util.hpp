@@ -1,4 +1,5 @@
-#pragma once
+#ifndef UTIL
+#define UTIL
 
 #include "mfem.hpp"
 #include "object.h"
@@ -23,3 +24,5 @@ std::map<int,std::string> ecg_readAssignments(OBJECT* obj, const std::string dat
 // Basic inline progress reporting
 
 double ecg_readParGF(OBJECT* obj, const std::string VmFilename, const int global_size, const std::unordered_map<int,int> &gfFromGid, std::vector<double>& final_values);
+
+#endif

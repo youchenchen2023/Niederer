@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MARTIXEP_COEF
+#define MARTIXEP_COEF
 
 #include "mfem.hpp"
 #include <unordered_map>
@@ -22,3 +23,5 @@ public:
   std::unordered_map<int,mfem::Vector> heartConductivities_;
   std::unordered_map<int,double> bathConductivities_;
 };
+
+#endif
