@@ -3,7 +3,7 @@
         {
             "name": "Mac",
             "includePath": [
-                "${workspaceFolder}/**","/Users/chenyou/femheart/mfem-4.6"
+                "${workspaceFolder}/**","/Users/chenyou/femheart/mfem-4.6","/Users/chenyou/femheart/femheart"
             ],
             "defines": [],
             "macFrameworkPath": [

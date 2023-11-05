@@ -29,20 +29,6 @@
 
 using namespace mfem;
 
-MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
-
-std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
-
-void StartTimer(const std::string& label) {
-    start_time = std::chrono::high_resolution_clock::now();
-    std::cout << "Started timer: " << label << std::endl;
-}
-
-void EndTimer() {
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    std::cout << "Elapsed time: " << duration_ << " milliseconds" << std::endl;
-}
 
 //Stolen from SingleCell
 class Timeline
@@ -74,8 +60,8 @@ int main(int argc, char *argv[])
 {  
    MPI_Init(NULL,NULL);   // without specific command line
    int num_ranks, my_rank;
-   MPI_Comm_size(COMM_LOCAL,&num_ranks); // number of processes in COMM_LOCAL
-   MPI_Comm_rank(COMM_LOCAL,&my_rank); 
+   MPI_Comm_size(MPI_COMM_WORLD, &num_ranks); // number of processes in COMM_LOCAL
+   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank); 
 
    units_internal(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
    units_external(1e-3, 1e-9, 1e-3, 1e-3, 1, 1e-9, 1);
@@ -83,14 +69,13 @@ int main(int argc, char *argv[])
    if (my_rank == 0)
    {
       std::cout << "Initializing with " << num_ranks << " MPI ranks." << std::endl;
-      std::cout << "some change!!!!" << std::endl;
    }
    
    int order = 1;
 
    std::vector<std::string> objectFilenames;
    if (argc == 1)
-      objectFilenames.push_back("femheart.data");
+      objectFilenames.push_back("femheart.data"); //push_back function is used to add an element to the end of the vector.
 
    for (int iargCursor=1; iargCursor<argc; iargCursor++)
       objectFilenames.push_back(argv[iargCursor]);
@@ -104,10 +89,10 @@ int main(int argc, char *argv[])
    OBJECT* obj = object_find("femheart", "HEART");
    assert(obj != NULL);
 
-   StartTimer("Read the mesh");
+   //StartTimer("Read the mesh");
    // Read shared global mesh
    mfem::Mesh *mesh = ecg_readMeshptr(obj, "mesh");
-   EndTimer();
+   //EndTimer();
 
    int dim = mesh->Dimension();
 
@@ -273,7 +258,6 @@ int main(int argc, char *argv[])
             local_counts[*(pvertset[i].begin())]++;
          }
       }
-
       local_extents[0] = 0;
       for (int irank=0; irank<num_ranks; irank++)
       {
