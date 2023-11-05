@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
    ParGridFunction gf_b(pfespace);
    gf_Vm = initVm;
    gf_b = 0.0;
-/*
+
    ParaViewDataCollection pd("V_m", pmesh);
    pd.SetPrefixPath("ParaView");
    pd.RegisterField("solution", &gf_Vm);
@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
    pd.SetCycle(0);
    pd.SetTime(0.0);
    pd.Save();
-*/
+
    // Load fiber quaternions from file
    std::shared_ptr<GridFunction> flat_fiber_quat;
    ecg_readGF(obj, "fibers", mesh, flat_fiber_quat);
@@ -518,12 +518,12 @@ int main(int argc, char *argv[])
    while (1)
    {  
       //output if appropriate
-     /*if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
+     if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
       {
          pd.SetCycle(itime);
          pd.SetTime(timeline.realTimeFromTimestep(itime));
          pd.Save();
-      }*/ 
+      }
       if (my_rank == 0)
       {  
          double time = (double)(clock()-time_start)/CLOCKS_PER_SEC;
