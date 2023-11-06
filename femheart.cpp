@@ -412,7 +412,7 @@ int main(int argc, char *argv[])
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
    a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
    a->AddDomainIntegrator(new MassIntegrator(one));
-   a->Update(pfespace);
+   a->Update(pfespace);   
    a->Assemble();
    HypreParMatrix LHS_mat;
    a->FormSystemMatrix(ess_tdof_list,LHS_mat);
@@ -489,9 +489,12 @@ int main(int argc, char *argv[])
       c->AddDomainIntegrator(new QuadratureIntegrator(rf, dt)); 
    }
 
-   Vector actual_Vm(pfespace->GetTrueVSize()), actual_b(pfespace->GetTrueVSize()), actual_old(pfespace->GetTrueVSize());
+   Vector actual_Vm(pfespace->GetTrueVSize());
+   Vector actual_b(pfespace->GetTrueVSize());
+   Vector actual_old(pfespace->GetTrueVSize());
    Vector actual_Iion(pfespace->GetTrueVSize());
-   bool first=true;
+
+   //bool first=true;
 
    if (useNodalIion)
    {
@@ -499,8 +502,9 @@ int main(int argc, char *argv[])
    }
    
    int itime=0;
-   clock_t time_start = clock();
-   while (1)
+   clock_t time_start = clock(); //record time start
+
+   while (itime != timeline.maxTimesteps())
    {  
       //output if appropriate
      if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
@@ -516,11 +520,11 @@ int main(int argc, char *argv[])
          std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
       }
       //if end time, then exit
-      if (itime == timeline.maxTimesteps()) { break; }
+     // if (itime == timeline.maxTimesteps()) { break; }
 
       //calculate the ionic contribution.
       if (useNodalIion) {
-         reactionWrapper.getVmReadwrite() = actual_Vm; //should be a memcpy
+         actual_Vm = reactionWrapper.getVmReadwrite() ; //should be a memcpy
          reactionWrapper.Calc();
       } else {
          rf->Calc(gf_Vm);
@@ -542,13 +546,14 @@ int main(int argc, char *argv[])
          Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
          actual_b += actual_old;
       }
+
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
 
       a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);
 
       itime++;
-      first=false;
+     // first=false;
    }
    /*
    const char *petscrc_file = "";
@@ -557,7 +562,7 @@ int main(int argc, char *argv[])
    */
    // 14. Free the used memory.
    delete M_test;
-   delete petscrc_file;
+   //delete petscrc_file;
    delete a;
    delete b;
    delete c;
