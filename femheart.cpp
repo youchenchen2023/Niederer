@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
    Vector actual_old(pfespace->GetTrueVSize());
    Vector actual_Iion(pfespace->GetTrueVSize());
 
-   //bool first=true;
+   bool first=true;
 
    if (useNodalIion)
    {
@@ -553,13 +553,12 @@ int main(int argc, char *argv[])
       }
 
       //solve the matrix
-      // 
       pcg.Mult(actual_b, actual_Vm);
 
       a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);
 
       itime++;
-     // first=false;
+      first=false;
    }
    /*
    const char *petscrc_file = "";
