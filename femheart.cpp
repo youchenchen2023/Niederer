@@ -397,12 +397,12 @@ int main(int argc, char *argv[])
    //StartTimer("Forming bilinear system (RHS)");
 
    ConstantCoefficient one(1.0);
-   ParBilinearForm *b = new ParBilinearForm(pfespace);
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
-   b->AddDomainIntegrator(new MassIntegrator(one));
+   ParBilinearForm *b = new ParBilinearForm(pfespace); // 
+   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs)); //for -div(sigma*nbla)v_old
+   b->AddDomainIntegrator(new MassIntegrator(one));//for v_old
    b->Assemble();
    // This creates the linear algebra problem.
-   HypreParMatrix RHS_mat;
+   HypreParMatrix RHS_mat; // right-hand sied matrix
    b->FormSystemMatrix(ess_tdof_list, RHS_mat);
    //EndTimer();
 
@@ -414,11 +414,11 @@ int main(int argc, char *argv[])
    a->AddDomainIntegrator(new MassIntegrator(one));
    a->Update(pfespace);   
    a->Assemble();
-   HypreParMatrix LHS_mat;
+   HypreParMatrix LHS_mat; // left-hand sied matrix
    a->FormSystemMatrix(ess_tdof_list,LHS_mat);
    //EndTimer();
 
-   //Set up the solve
+   //Set up the solve    
    HyprePCG pcg(LHS_mat);
    pcg.SetTol(1e-12);
    pcg.SetMaxIter(2000);
@@ -484,7 +484,6 @@ int main(int argc, char *argv[])
       Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
    } else {
       Iion_blf = NULL;
-      
       rf = new ReactionFunction(&quadSpace,pfespace,&reactionWrapper); 
       c->AddDomainIntegrator(new QuadratureIntegrator(rf, dt)); 
    }
@@ -504,7 +503,7 @@ int main(int argc, char *argv[])
    int itime=0;
    clock_t time_start = clock(); //record time start
 
-   while (itime != timeline.maxTimesteps())
+   while (itime != timeline.maxTimesteps()) // don't know wheather it will ouput the last solution or not
    {  
       //output if appropriate
      if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
@@ -536,18 +535,25 @@ int main(int argc, char *argv[])
       //compute the Iion and stimulus contribution
       c->Update();
       c->Assemble();
+      //form Ax=b (A=LHS_mat, x=actual_Vm, b=actual_b)
       a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b, 1);
+
+
       //compute the RHS matrix contribution
+      // actual_old = RHS_mat * actual_Vm   
       RHS_mat.Mult(actual_Vm, actual_old);
       actual_b += actual_old;
 
+      //compute the Iion contribution
       if (useNodalIion)
       {
+         //actual_old = Iion_mat * Iion
          Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
          actual_b += actual_old;
       }
 
       //solve the matrix
+      // 
       pcg.Mult(actual_b, actual_Vm);
 
       a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);

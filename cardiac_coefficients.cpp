@@ -16,9 +16,9 @@ ReactionWrapper::ReactionWrapper(const double new_dt, const std::vector<std::str
 : dt(new_dt), threadGroup(group)
 {
       
-   nCells = cellTypes.size();
+   nCells = cellTypes.size(); // member of all cells
 
-   Vm.resize(nCells);
+   Vm.resize(nCells);      // shape lazy_array 
    dVm.resize(nCells);
    iStim.resize(nCells);
 
