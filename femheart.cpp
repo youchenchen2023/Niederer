@@ -371,14 +371,14 @@ int main(int argc, char *argv[])
 
    
    // Load conductivity data
-   MatrixElementPiecewiseCoefficient sigma_m_pos_coeffs(fiber_quat);
-   Vector sigma_m_pos_vec(3);
+   MatrixElementPiecewiseCoefficient sigma_m_coeffs(fiber_quat);
+   Vector sigma_m_vec(3);
    for (int jj=0; jj<3; jj++)
    {
       double value = sigma_m[jj]*dt/Bm/Cm;
-      sigma_m_pos_vec[jj] = value;
+      sigma_m_vec[jj] = value;
    }
-   sigma_m_pos_coeffs.heartConductivities_[1] = sigma_m_pos_vec;
+   sigma_m_coeffs.heartConductivities_[1] = sigma_m_vec;
  
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
@@ -393,7 +393,7 @@ int main(int argc, char *argv[])
    
    // Brought out of loop to avoid unnecessary duplication
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
    a->AddDomainIntegrator(new MassIntegrator(one));
    a->Assemble();
    HypreParMatrix LHS_mat;
