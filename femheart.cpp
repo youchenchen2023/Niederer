@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
          double value = sigma_m[jj]*dt/Bm/Cm;
          sigma_m_pos_vec[jj] = value;
       }
-      sigma_m_pos_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_pos_vec;
+      sigma_m_pos_coeffs.heartConductivities_[1] = sigma_m_pos_vec;
    }
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
