@@ -29,6 +29,7 @@
 
 using namespace mfem;
 
+MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
 class Timeline
 {
@@ -462,7 +463,7 @@ int main(int argc, char *argv[])
       //actual_old = RHS_mat * v_new + Iion_mat * Iion  
       RHS_mat.Mult(v_new, actual_old);
       actual_b += actual_old;
-      
+
       Iion_mat.Mult(reactionWrapper.getIionReadonly(),actual_old);
       actual_b += actual_old;
 
