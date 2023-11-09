@@ -374,6 +374,15 @@ int main(int argc, char *argv[])
    HypreParMatrix RHS_mat; 
    b->FormSystemMatrix(ess_tdof_list, RHS_mat);
 
+   //Set up the Iion term
+   ConstantCoefficient coe_dt(dt);
+   ParBilinearForm *Iion = new ParBilinearForm(pfespace); 
+   Iion->AddDomainIntegrator(new MassIntegrator(coe_dt));
+   Iion->Update(pfespace);  
+   Iion->Assemble();
+   HypreParMatrix Iion_mat; 
+   Iion->FormSystemMatrix(ess_tdof_list, Iion_mat);
+
    //Set up the stimulus term
    ParLinearForm *c = new ParLinearForm(pfespace);
    c->AddDomainIntegrator(new DomainLFIntegrator(stims));
@@ -450,9 +459,11 @@ int main(int argc, char *argv[])
       a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, v_new, actual_b, 1);
 
       //compute the RHS matrix Iion contribution
-      //actual_old = RHS_mat * (v_new + dt * Iion)  
-
-      RHS_mat.Mult(v_new+reactionWrapper.getIionReadonly().Mult(dt), actual_old);
+      //actual_old = RHS_mat * v_new + Iion_mat * Iion  
+      RHS_mat.Mult(v_new, actual_old);
+      actual_b += actual_old;
+      
+      Iion_mat.Mult(reactionWrapper.getIionReadonly(),actual_old);
       actual_b += actual_old;
 
       //Solve the linear system LHS_mat * v_new = b
