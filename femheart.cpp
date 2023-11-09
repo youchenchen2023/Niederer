@@ -421,25 +421,27 @@ int main(int argc, char *argv[])
    //StartTimer("Forming bilinear system (RHS)");
 
    ConstantCoefficient one(1.0);
-   ParBilinearForm *b = new ParBilinearForm(pfespace);
-   b->AddDomainIntegrator(new MassIntegrator(one));
-   b->Assemble();
-   // This creates the linear algebra problem.
-   HypreParMatrix RHS_mat;
-   b->FormSystemMatrix(ess_tdof_list, RHS_mat);
-   //EndTimer();
-
    //StartTimer("Forming bilinear system (LHS)");
    
    // Brought out of loop to avoid unnecessary duplication
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
    a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
    a->AddDomainIntegrator(new MassIntegrator(one));
-   a->Update(pfespace);
    a->Assemble();
    HypreParMatrix LHS_mat;
    a->FormSystemMatrix(ess_tdof_list,LHS_mat);
    //EndTimer();
+
+   ParBilinearForm *b = new ParBilinearForm(pfespace);
+   b->AddDomainIntegrator(new MassIntegrator(one));
+   b->Update(pfespace);
+   b->Assemble();
+   // This creates the linear algebra problem.
+   HypreParMatrix RHS_mat;
+   b->FormSystemMatrix(ess_tdof_list, RHS_mat);
+   //EndTimer();
+
+
 
    ParBilinearForm *Iion_blf = new ParBilinearForm(pfespace);
    HypreParMatrix Iion_mat;
