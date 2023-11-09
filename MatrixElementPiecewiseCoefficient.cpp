@@ -46,12 +46,7 @@ void MatrixElementPiecewiseCoefficient::Eval(
    std::unordered_map<int,mfem::Vector>::iterator iter = heartConductivities_.find(T.Attribute);
    if (iter != heartConductivities_.end()) {
       mfem::Vector direction(3);
-     // if (1) {
-         p_gf_->GetVectorValue(T.ElementNo, ip, direction);
-     // } else {
-    //    direction = 0.0;
-    //  }
-
+      p_gf_->GetVectorValue(T.ElementNo, ip, direction);
       mfem::Vector quat(4);
       double w2 = 1;
       for (int ii=0; ii<3; ii++) {
@@ -59,17 +54,8 @@ void MatrixElementPiecewiseCoefficient::Eval(
          w2 -= direction(ii)*direction(ii);
       }
       quat(0) = sqrt(w2);
-         
       mfem::DenseMatrix VVV = quat2rot(quat);
       MultADAt(VVV,iter->second,K);
    }
-  /* else {
-      std::unordered_map<int,double>::iterator iter = bathConductivities_.find(T.Attribute);
-      assert(iter != bathConductivities_.end());
-      K=0.0;
-      for (int ii=0; ii<3; ii++) {
-         K(ii,ii) = iter->second;
-      }
-   }*/
 }
 
