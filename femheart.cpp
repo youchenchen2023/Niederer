@@ -404,16 +404,12 @@ int main(int argc, char *argv[])
       int heartCursor=3*ii;
       Vector sigma_m_vec(&sigma_m[heartCursor],3);
       Vector sigma_m_pos_vec(3);
-      Vector sigma_m_neg_vec(3);
       for (int jj=0; jj<3; jj++)
       {
          double value = sigma_m[jj]*dt/Bm/Cm;
          sigma_m_pos_vec[jj] = value;
-         sigma_m_neg_vec[jj] = -value;
       }
-    
       sigma_m_pos_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_pos_vec;
-      sigma_m_neg_coeffs.heartConductivities_[heartRegions[ii]] = sigma_m_neg_vec;
    }
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
@@ -426,7 +422,6 @@ int main(int argc, char *argv[])
 
    ConstantCoefficient one(1.0);
    ParBilinearForm *b = new ParBilinearForm(pfespace);
-   //b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
    b->AddDomainIntegrator(new MassIntegrator(one));
    b->Assemble();
    // This creates the linear algebra problem.
@@ -446,13 +441,13 @@ int main(int argc, char *argv[])
    a->FormSystemMatrix(ess_tdof_list,LHS_mat);
    //EndTimer();
 
-   //Set up the solve
-   HyprePCG pcg(LHS_mat);
-   pcg.SetTol(1e-12);
-   pcg.SetMaxIter(2000);
-   pcg.SetPrintLevel(2);
-   HypreSolver *M_test = new HypreBoomerAMG(LHS_mat);
-   pcg.SetPreconditioner(*M_test);
+   ParBilinearForm *Iion_blf = new ParBilinearForm(pfespace);
+   HypreParMatrix Iion_mat;
+   ConstantCoefficient dt_coeff(dt);
+   Iion_blf->AddDomainIntegrator(new MassIntegrator(dt_coeff));
+   Iion_blf->Update(pfespace);
+   Iion_blf->Assemble();
+   Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
 
 
    //Set up the ionic models
@@ -460,7 +455,13 @@ int main(int argc, char *argv[])
    //positive dt here because the reaction models use dVm = -Iion
    c->AddDomainIntegrator(new DomainLFIntegrator(stims));
 
-
+   //Set up the solve
+   HyprePCG pcg(LHS_mat);
+   pcg.SetTol(1e-12);
+   pcg.SetMaxIter(2000);
+   pcg.SetPrintLevel(2);
+   HypreSolver *M_test = new HypreBoomerAMG(LHS_mat);
+   pcg.SetPreconditioner(*M_test);
    
    ThreadServer& threadServer = ThreadServer::getInstance();
    ThreadTeam defaultGroup = threadServer.getThreadTeam(vector<unsigned>());
@@ -468,63 +469,23 @@ int main(int argc, char *argv[])
    reactionNames.push_back(reactionName);
    std::vector<int> cellTypes;
 
-   //int Iion_order = 2*order+3;
-   int Iion_order = 2*order-1;
-   QuadratureSpace quadSpace(pmesh, Iion_order);
-   //if (useNodalIion)
-  // {
-      for (int ranklookup=local_extents[my_rank]; ranklookup<local_extents[my_rank+1]; ranklookup++)
-      {
-         cellTypes.push_back(material_from_ranklookup[ranklookup]);
-      }
-   //}
-  /* else
+   for (int ranklookup=local_extents[my_rank]; ranklookup<local_extents[my_rank+1]; ranklookup++)
    {
-      for (int i = 0; i < pfespace->GetNE(); ++i)
-      {
-         ElementTransformation *T = pfespace->GetElementTransformation(i);
-         //This is a hack.  There's no way to get access to the offsets() array
-         //in Quadrature Space without declaring ourselves to be a friend class.
-         //This is broken and I hope it is fixed in 4.0
-         Vector localVm;
-         int NNN = quadSpace.GetElementIntRule(i).GetNPoints();
-         for ( int j=0; j<NNN; j++)
-         {
-            cellTypes.push_back(T->Attribute);
-         }
-      }
-   }*/
+      cellTypes.push_back(material_from_ranklookup[ranklookup]);
+   }
 
    ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
    reactionWrapper.Initialize();
    cellTypes.clear();
    reactionNames.clear();
-   
-   ParBilinearForm *Iion_blf;
-   HypreParMatrix Iion_mat;
-   ConstantCoefficient dt_coeff(dt);
-   //ReactionFunction* rf = NULL;
-   //if (useNodalIion) {
-      Iion_blf = new ParBilinearForm(pfespace);
-      Iion_blf->AddDomainIntegrator(new MassIntegrator(dt_coeff));
-      Iion_blf->Update(pfespace);
-      Iion_blf->Assemble();
-      Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
-  /*} else {
-      Iion_blf = NULL;
-      
-      rf = new ReactionFunction(&quadSpace,pfespace,&reactionWrapper); 
-      c->AddDomainIntegrator(new QuadratureIntegrator(rf, dt)); 
-   }*/
 
-   Vector actual_Vm(pfespace->GetTrueVSize()), actual_b(pfespace->GetTrueVSize()), actual_old(pfespace->GetTrueVSize());
+   Vector actual_Vm(pfespace->GetTrueVSize()); 
+   Vector actual_b(pfespace->GetTrueVSize());
+   Vector actual_old(pfespace->GetTrueVSize());
    Vector actual_Iion(pfespace->GetTrueVSize());
    bool first=true;
 
-   //if (useNodalIion)
-  // {
-      actual_Vm = reactionWrapper.getVmReadonly();
-   //}
+   actual_Vm = reactionWrapper.getVmReadonly();
    
    int itime=0;
    clock_t time_start = clock();
@@ -546,13 +507,10 @@ int main(int argc, char *argv[])
       //if end time, then exit
       if (itime == timeline.maxTimesteps()) { break; }
 
-      //calculate the ionic contribution.
-     // if (useNodalIion) {
-         reactionWrapper.getVmReadwrite() = actual_Vm; //should be a memcpy
-         reactionWrapper.Calc();
-     // } else {
-      //   rf->Calc(gf_Vm);
-     // }
+
+      reactionWrapper.getVmReadwrite() = actual_Vm; //should be a memcpy
+      reactionWrapper.Calc();
+
       
       //add stimulii
       stims.updateTime(timeline.realTimeFromTimestep(itime));
@@ -565,11 +523,9 @@ int main(int argc, char *argv[])
       RHS_mat.Mult(actual_Vm, actual_old);
       actual_b += actual_old;
 
-      //if (useNodalIion)
-      //{
-         Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
-         actual_b += actual_old;
-     // }
+      Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
+      actual_b += actual_old;
+
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
 
