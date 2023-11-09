@@ -209,7 +209,6 @@ int main(int argc, char *argv[])
 
      Each {} is a matrix that is done with FEM.
 
-
      sigma_m = sigma_e_diagonal*sigma_i_diagonal/(sigma_e_diagonal+sigma_i_diagonal)
 
      This is the monodomain conductivity.  It really only approximates the bidomain conductivity if the ratio
@@ -451,8 +450,9 @@ int main(int argc, char *argv[])
       a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, v_new, actual_b, 1);
 
       //compute the RHS matrix Iion contribution
-      // actual_old = RHS_mat * (v_new + dt * Iion)  
-      RHS_mat.Mult(v_new+dt*reactionWrapper.getIionReadonly(), actual_old);
+      //actual_old = RHS_mat * (v_new + dt * Iion)  
+
+      RHS_mat.Mult(v_new+reactionWrapper.getIionReadonly().Mult(dt), actual_old);
       actual_b += actual_old;
 
       //Solve the linear system LHS_mat * v_new = b
