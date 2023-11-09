@@ -441,8 +441,6 @@ int main(int argc, char *argv[])
    b->FormSystemMatrix(ess_tdof_list, RHS_mat);
    //EndTimer();
 
-
-
    ParBilinearForm *Iion_blf = new ParBilinearForm(pfespace);
    HypreParMatrix Iion_mat;
    ConstantCoefficient dt_coeff(dt);
@@ -491,15 +489,9 @@ int main(int argc, char *argv[])
    
    int itime=0;
    clock_t time_start = clock();
-   while (1)
+   while (itime != timeline.maxTimesteps())
    {  
-      //output if appropriate
-     if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
-      {
-         pd.SetCycle(itime);
-         pd.SetTime(timeline.realTimeFromTimestep(itime));
-         pd.Save();
-      }
+
       if (my_rank == 0)
       {  
          double time = (double)(clock()-time_start)/CLOCKS_PER_SEC;
@@ -507,12 +499,10 @@ int main(int argc, char *argv[])
          std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
       }
       //if end time, then exit
-      if (itime == timeline.maxTimesteps()) { break; }
-
+     // if (itime == timeline.maxTimesteps()) { break; }
 
       reactionWrapper.getVmReadwrite() = actual_Vm; //should be a memcpy
       reactionWrapper.Calc();
-
       
       //add stimulii
       stims.updateTime(timeline.realTimeFromTimestep(itime));
@@ -534,6 +524,13 @@ int main(int argc, char *argv[])
       a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);
 
       itime++;
+      //output if appropriate
+     if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
+      {
+         pd.SetCycle(itime);
+         pd.SetTime(timeline.realTimeFromTimestep(itime));
+         pd.Save();
+      }
       first=false;
    }
 
