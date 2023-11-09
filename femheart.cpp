@@ -51,19 +51,6 @@ class Timeline
    {
       return round(realTime/dt_);
    }
-   std::string outputIdFromTimestep(const int timestep) const
-   {
-      double resolution = 1e-3;
-      int width = 8;
-      while (resolution > dt_) {
-         resolution /= 10;
-         width++;
-      }
-      std::stringstream ss;
-      ss << std::setfill('0') << std::setw(width)
-         << int(round(dt_*timestep/resolution));
-      return ss.str();
-   }
 
  private:
    double dt_;
