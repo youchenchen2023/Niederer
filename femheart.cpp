@@ -531,7 +531,7 @@ int main(int argc, char *argv[])
    while (1)
    {  
       //output if appropriate
-     *if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
+     if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
       {
          pd.SetCycle(itime);
          pd.SetTime(timeline.realTimeFromTimestep(itime));
