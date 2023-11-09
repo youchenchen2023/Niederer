@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
    double initVm;
    objectGet(obj, "init_vm", initVm, "-83");
 
-   bool useNodalIion = true;
+   //bool useNodalIion = true;
    //objectGet(obj, "nodal_ion", useNodalIion, "1");
 
    StimulusCollection stims(dt);
@@ -471,14 +471,14 @@ int main(int argc, char *argv[])
    //int Iion_order = 2*order+3;
    int Iion_order = 2*order-1;
    QuadratureSpace quadSpace(pmesh, Iion_order);
-   if (useNodalIion)
-   {
+   //if (useNodalIion)
+  // {
       for (int ranklookup=local_extents[my_rank]; ranklookup<local_extents[my_rank+1]; ranklookup++)
       {
          cellTypes.push_back(material_from_ranklookup[ranklookup]);
       }
-   }
-   else
+   //}
+  /* else
    {
       for (int i = 0; i < pfespace->GetNE(); ++i)
       {
@@ -493,7 +493,7 @@ int main(int argc, char *argv[])
             cellTypes.push_back(T->Attribute);
          }
       }
-   }
+   }*/
 
    ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
    reactionWrapper.Initialize();
@@ -503,28 +503,28 @@ int main(int argc, char *argv[])
    ParBilinearForm *Iion_blf;
    HypreParMatrix Iion_mat;
    ConstantCoefficient dt_coeff(dt);
-   ReactionFunction* rf = NULL;
-   if (useNodalIion) {
+   //ReactionFunction* rf = NULL;
+   //if (useNodalIion) {
       Iion_blf = new ParBilinearForm(pfespace);
       Iion_blf->AddDomainIntegrator(new MassIntegrator(dt_coeff));
       Iion_blf->Update(pfespace);
       Iion_blf->Assemble();
       Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
-   } else {
+  /*} else {
       Iion_blf = NULL;
       
       rf = new ReactionFunction(&quadSpace,pfespace,&reactionWrapper); 
       c->AddDomainIntegrator(new QuadratureIntegrator(rf, dt)); 
-   }
+   }*/
 
    Vector actual_Vm(pfespace->GetTrueVSize()), actual_b(pfespace->GetTrueVSize()), actual_old(pfespace->GetTrueVSize());
    Vector actual_Iion(pfespace->GetTrueVSize());
    bool first=true;
 
-   if (useNodalIion)
-   {
+   //if (useNodalIion)
+  // {
       actual_Vm = reactionWrapper.getVmReadonly();
-   }
+   //}
    
    int itime=0;
    clock_t time_start = clock();
@@ -547,12 +547,12 @@ int main(int argc, char *argv[])
       if (itime == timeline.maxTimesteps()) { break; }
 
       //calculate the ionic contribution.
-      if (useNodalIion) {
+     // if (useNodalIion) {
          reactionWrapper.getVmReadwrite() = actual_Vm; //should be a memcpy
          reactionWrapper.Calc();
-      } else {
-         rf->Calc(gf_Vm);
-      }
+     // } else {
+      //   rf->Calc(gf_Vm);
+     // }
       
       //add stimulii
       stims.updateTime(timeline.realTimeFromTimestep(itime));
@@ -565,11 +565,11 @@ int main(int argc, char *argv[])
       RHS_mat.Mult(actual_Vm, actual_old);
       actual_b += actual_old;
 
-      if (useNodalIion)
-      {
+      //if (useNodalIion)
+      //{
          Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
          actual_b += actual_old;
-      }
+     // }
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
 
