@@ -98,8 +98,6 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
 
    //Fill in the MatrixElementPiecewiseCoefficients
-   std::vector<int> heartRegions;
-   objectGet(obj, "heart_regions", heartRegions);
    std::vector<double> sigma_m;
    objectGet(obj,"sigma_m",sigma_m);
 
@@ -353,7 +351,7 @@ int main(int argc, char *argv[])
          double value = sigma_m[jj]*dt/Bm/Cm;
          sigma_m_vec[jj] = value;
       }
-      sigma_m_coeffs.heartConductivities_[heartRegions[0]] = sigma_m_vec;
+      sigma_m_coeffs.heartConductivities_[1] = sigma_m_vec;
    }
    //Set up the bilinear form a(.,.) on the finite element space
    //orresponding to the Laplacian operator -Delta, by adding the Diffusion
