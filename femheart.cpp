@@ -98,8 +98,8 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
 
    //Fill in the MatrixElementPiecewiseCoefficients
-   std::vector<int> heartReagions;
-   objectGet(obj, "heart_regions", heartReagions);
+   std::vector<int> heartRegions;
+   objectGet(obj, "heart_regions", heartRegions);
    std::vector<double> sigma_m;
    objectGet(obj,"sigma_m",sigma_m);
 
