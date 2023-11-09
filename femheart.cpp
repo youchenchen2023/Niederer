@@ -578,12 +578,9 @@ int main(int argc, char *argv[])
       itime++;
       first=false;
    }
-   const char *petscrc_file = "";
-   MFEMInitializePetsc(NULL,NULL,petscrc_file,NULL); 
-   MFEMFinalizePetsc();
+
    // 14. Free the used memory.
    delete M_test;
-   delete petscrc_file;
    delete a;
    delete b;
    delete c;
