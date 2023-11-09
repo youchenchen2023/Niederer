@@ -30,7 +30,6 @@
 using namespace mfem;
 
 
-//Stolen from SingleCell
 class Timeline
 {
  public:
@@ -90,20 +89,16 @@ int main(int argc, char *argv[])
    OBJECT* obj = object_find("femheart", "HEART");
    assert(obj != NULL);
 
-   //StartTimer("Read the mesh");
+
    // Read shared global mesh
    mfem::Mesh *mesh = ecg_readMeshptr(obj, "mesh");
-   //EndTimer();
+
 
    int dim = mesh->Dimension();
 
    //Fill in the MatrixElementPiecewiseCoefficients
-
-  //std::vector<int> heartRegions;
-  //objectGet(obj,"heart_regions", heartRegions);
    std::vector<double> sigma_m;
    objectGet(obj,"sigma_m",sigma_m);
-   //assert(heartRegions.size()*3 == sigma_m.size());
 
    double dt;
    objectGet(obj,"dt",dt,"0.01 ms");
@@ -130,8 +125,6 @@ int main(int argc, char *argv[])
    double initVm;
    objectGet(obj, "init_vm", initVm, "-83");
 
-   bool useNodalIion;
-   objectGet(obj, "nodal_ion", useNodalIion, "1");
 
    StimulusCollection stims(dt);
    {
@@ -206,35 +199,30 @@ int main(int argc, char *argv[])
      Bm in 1/mm
      sigma in mS/mm
 
-     To solve this, I use a semi implicit crank nicolson:
+     To solve this, I use a BackEuler method:
 
-     div(sigma_m*grad[(Vm_new+Vm_old)/2]) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion - Istim]
+     div(sigma_m*grad(Vm_new) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion - Istim
 
      with some algebra, that comes to
 
-     {1+dt/(2*Bm*Cm)*(-div sigma_m*grad)}*Vm_new = {1-dt/(2*Bm*Cm)*(-div sigma_m*grad)}*Vm_old - dt*Iion + dt*Istim
-
-     One easy way to check this is to set sigma_m to zero, then you get Forward euler for isolated equations.
+     {1+dt/(Bm*Cm)*(div sigma_m*grad)}*Vm_new = {1}*Vm_old - dt*Iion + dt*Istim
 
      Each {} is a matrix that is done with FEM.
+
 
      sigma_m = sigma_e_diagonal*sigma_i_diagonal/(sigma_e_diagonal+sigma_i_diagonal)
 
      This is the monodomain conductivity.  It really only approximates the bidomain conductivity if the ratio
      of sigma_e_tensor = k*sigma_i_tensor.  When this happens, you can remove Phi_e from the equations and
      end up with the equation listed above. 
+
    */
 
    
-   //StartTimer("Setting Attributes");
    mesh->SetAttributes();
-  // EndTimer();
-
-  // StartTimer("Partition Mesh");
-   // If I read correctly, pmeshpart will now point to an integer array
-   //  containing a partition ID (rank!) for every element ID.
+   //If I read correctly, pmeshpart will now point to an integer array
+   //containing a partition ID (rank!) for every element ID.
    int *pmeshpart = mesh->GeneratePartitioning(num_ranks);
-  // EndTimer();
 
 
    //Go through all the elements and label the partitioning for the vertices
@@ -323,100 +311,73 @@ int main(int argc, char *argv[])
          std::cout << "Rank " << i << " has " << local_extents[i+1]-local_extents[i] << " nodes!" << std::endl;
       }
    }
+
+   //Define a parallel mesh by a partitioning of the serial mesh.
    ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, pmeshpart);
    
-   // Build a new FEC...
-   FiniteElementCollection *fec;
-   if (my_rank == 0) { std::cout << "Creating new FEC..." << std::endl; }
-   fec = new H1_FECollection(order, dim);
-   // ...and corresponding FES
+   //Build a new FEC and corresponding FES
+   if (my_rank == 0) { std::cout << "Creating FEC" << std::endl; }
+   FiniteElementCollection *fec = new H1_FECollection(order, dim);
    ParFiniteElementSpace *pfespace = new ParFiniteElementSpace(pmesh, fec);
-   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
    std::cout << "[" << my_rank << "] Number of finite element unknowns: "
 	     << pfespace->GetTrueVSize() << std::endl;
 
-   // 5. Determine the list of true (i.e. conforming) essential boundary DOFs
-   Array<int> ess_tdof_list;   // Essential true degrees of freedom
-   // "true" takes into account shared vertices.
+   //Determine the list of true (i.e. conforming) essential boundary DOFs
+   //Essential true degrees of freedom, "true" takes into account shared vertices.
+   Array<int> ess_tdof_list;   
    {
       Array<int> ess_bdr(pmesh->bdr_attributes.Max());
       ess_bdr = 0;
       pfespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
 
-   // 7. Define the solution vector x as a finite element grid function
-   //    corresponding to pfespace. Initialize x with initial guess of zero,
-   //    which satisfies the boundary conditions.
+   //Define the solution vector gf_Vm as a finite element grid function
+   //corresponding to pfespace. Initialize gf_Vm with initial value initVm.
    ParGridFunction gf_Vm(pfespace);
-   ParGridFunction gf_b(pfespace);
    gf_Vm = initVm;
-   gf_b = 0.0;
 
-   ParaViewDataCollection pd("V_m", pmesh);
-   pd.SetPrefixPath("ParaView");
-   pd.RegisterField("solution", &gf_Vm);
-   pd.SetLevelsOfDetail(order);
-   pd.SetDataFormat(VTKFormat::BINARY);
-   pd.SetHighOrderOutput(true);
-   pd.SetCycle(0);
-   pd.SetTime(0.0);
-   pd.Save();
-
-   // Load fiber quaternions from file
+   //Read fiber quaternions from file
    std::shared_ptr<GridFunction> flat_fiber_quat;
    ecg_readGF(obj, "fibers", mesh, flat_fiber_quat);
    std::shared_ptr<ParGridFunction> fiber_quat;
    fiber_quat = std::make_shared<mfem::ParGridFunction>(pmesh, flat_fiber_quat.get(), pmeshpart);
 
-   
-   // Load conductivity data
-   MatrixElementPiecewiseCoefficient sigma_m_pos_coeffs(fiber_quat);
-   MatrixElementPiecewiseCoefficient sigma_m_neg_coeffs(fiber_quat);
-   
-   //for (int ii=0; ii<heartRegions.size(); ii++) {
-   //   int heartCursor=3*ii;
-      //Vector sigma_m_vec(&sigma_m[heartCursor],3);
-      Vector sigma_m_pos_vec(3);
-      Vector sigma_m_neg_vec(3);
+   //Load conductivity data
+   MatrixElementPiecewiseCoefficient sigma_m_coeffs(fiber_quat);
+   { 
+      Vector sigma_m_vec(3);
       for (int jj=0; jj<3; jj++)
       {
-         double value = sigma_m[jj]*dt/2/Bm/Cm;
-         sigma_m_pos_vec[jj] = value;
-         sigma_m_neg_vec[jj] = -value;
+         double value = -sigma_m[jj]*dt/2/Bm/Cm;
+         sigma_m_vec[jj] = value;
       }
-      sigma_m_pos_coeffs.heartConductivities_[1] = sigma_m_pos_vec;
-      sigma_m_neg_coeffs.heartConductivities_[1] = sigma_m_neg_vec;
-   //}
+      sigma_m_coeffs.heartConductivities_[1] = sigma_m_vec;
+   }
+   //Set up the bilinear form a(.,.) on the finite element space
+   //orresponding to the Laplacian operator -Delta, by adding the Diffusion
+   //domain integrator.
+   //NOTICE THE FLIP IN SIGNS FOR SIGMA!  This is on purpose, Diffusion does -div(sigma*grad)
 
-   // 8. Set up the bilinear form a(.,.) on the finite element space
-   //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
-   //    domain integrator.
-
-   // NOTICE THE FLIP IN SIGNS FOR SIGMA!  This is on purpose, Diffusion does -div(sigma*grad)
-
-   //StartTimer("Forming bilinear system (RHS)");
-
+   //Set up left-hand side matrix LHS_mat
    ConstantCoefficient one(1.0);
-   ParBilinearForm *b = new ParBilinearForm(pfespace); // 
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs)); //for -div(sigma*nbla)v_old
-   b->AddDomainIntegrator(new MassIntegrator(one));//for v_old
-   b->Assemble();
-   // This creates the linear algebra problem.
-   HypreParMatrix RHS_mat; // right-hand sied matrix
-   b->FormSystemMatrix(ess_tdof_list, RHS_mat);
-   //EndTimer();
-
-   //StartTimer("Forming bilinear system (LHS)");
-   
-   // Brought out of loop to avoid unnecessary duplication
-   ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_pos_coeffs));
-   a->AddDomainIntegrator(new MassIntegrator(one));
-   a->Update(pfespace);   
+   ParBilinearForm *a = new ParBilinearForm(pfespace); 
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
+   a->AddDomainIntegrator(new MassIntegrator(one)); 
    a->Assemble();
-   HypreParMatrix LHS_mat; // left-hand sied matrix
+   HypreParMatrix LHS_mat; 
    a->FormSystemMatrix(ess_tdof_list,LHS_mat);
-   //EndTimer();
+
+   //Set up right-hand side matrix RHS_mat
+   ParBilinearForm *b = new ParBilinearForm(pfespace); 
+   b->AddDomainIntegrator(new MassIntegrator(one));
+   b->Update(pfespace);  
+   b->Assemble();
+   HypreParMatrix RHS_mat; 
+   b->FormSystemMatrix(ess_tdof_list, RHS_mat);
+
+   //Set up the stimulus term
+   ParLinearForm *c = new ParLinearForm(pfespace);
+   c->AddDomainIntegrator(new DomainLFIntegrator(stims));
 
    //Set up the solve    
    HyprePCG pcg(LHS_mat);
@@ -426,154 +387,100 @@ int main(int argc, char *argv[])
    HypreSolver *M_test = new HypreBoomerAMG(LHS_mat);
    pcg.SetPreconditioner(*M_test);
 
-
-   //Set up the ionic models
-   ParLinearForm *c = new ParLinearForm(pfespace);
-   //positive dt here because the reaction models use dVm = -Iion
-   c->AddDomainIntegrator(new DomainLFIntegrator(stims));
-
-
-   
+   //Prepare for reaction term
    ThreadServer& threadServer = ThreadServer::getInstance();
    ThreadTeam defaultGroup = threadServer.getThreadTeam(vector<unsigned>());
+
    std::vector<std::string> reactionNames;
    reactionNames.push_back(reactionName);
-   std::vector<int> cellTypes;
 
-   //int Iion_order = 2*order+3;
-   int Iion_order = 2*order-1;
-   QuadratureSpace quadSpace(pmesh, Iion_order);
-   if (useNodalIion)
+   std::vector<int> cellTypes;
+   for (int ranklookup=local_extents[my_rank]; ranklookup<local_extents[my_rank+1]; ranklookup++)
    {
-      for (int ranklookup=local_extents[my_rank]; ranklookup<local_extents[my_rank+1]; ranklookup++)
-      {
-         cellTypes.push_back(material_from_ranklookup[ranklookup]);
-      }
-   }
-   else
-   {
-      for (int i = 0; i < pfespace->GetNE(); ++i)
-      {
-         ElementTransformation *T = pfespace->GetElementTransformation(i);
-         //This is a hack.  There's no way to get access to the offsets() array
-         //in Quadrature Space without declaring ourselves to be a friend class.
-         //This is broken and I hope it is fixed in 4.0
-         Vector localVm;
-         int NNN = quadSpace.GetElementIntRule(i).GetNPoints();
-         for ( int j=0; j<NNN; j++)
-         {
-            cellTypes.push_back(T->Attribute);
-         }
-      }
+      cellTypes.push_back(material_from_ranklookup[ranklookup]);
    }
 
    ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
    reactionWrapper.Initialize();
    cellTypes.clear();
    reactionNames.clear();
-   
-   ParBilinearForm *Iion_blf;
-   HypreParMatrix Iion_mat;
-   ConstantCoefficient dt_coeff(dt);
-   ReactionFunction* rf = NULL;
-   if (useNodalIion) {
-      Iion_blf = new ParBilinearForm(pfespace);
-      Iion_blf->AddDomainIntegrator(new MassIntegrator(dt_coeff));
-      Iion_blf->Update(pfespace);
-      Iion_blf->Assemble();
-      Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
-   } else {
-      Iion_blf = NULL;
-      rf = new ReactionFunction(&quadSpace,pfespace,&reactionWrapper); 
-      c->AddDomainIntegrator(new QuadratureIntegrator(rf, dt)); 
-   }
 
-   Vector actual_Vm(pfespace->GetTrueVSize());
+   Vector v_new(pfespace->GetTrueVSize());
    Vector actual_b(pfespace->GetTrueVSize());
    Vector actual_old(pfespace->GetTrueVSize());
    Vector actual_Iion(pfespace->GetTrueVSize());
 
    bool first=true;
 
-   if (useNodalIion)
-   {
-      actual_Vm = reactionWrapper.getVmReadonly();
-   }
+   v_new = reactionWrapper.getVmReadonly();
+
+   // Initialize paraview 
+   ParaViewDataCollection pd("V_m", pmesh);
+   pd.SetPrefixPath("ParaView");
+   pd.RegisterField("solution", &gf_Vm);
+   pd.SetLevelsOfDetail(order);
+   pd.SetDataFormat(VTKFormat::BINARY);
+   pd.SetHighOrderOutput(true);
+   pd.SetCycle(0);
+   pd.SetTime(0.0);
+   pd.Save();
    
    int itime=0;
    clock_t time_start = clock(); //record time start
 
-   while (itime != timeline.maxTimesteps()) // don't know wheather it will ouput the last solution or not
+   while (itime != timeline.maxTimesteps()) 
    {  
-      //output if appropriate
-     if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
-      {
-         pd.SetCycle(itime);
-         pd.SetTime(timeline.realTimeFromTimestep(itime));
-         pd.Save();
-      }
+      
       if (my_rank == 0)
       {  
          double time = (double)(clock()-time_start)/CLOCKS_PER_SEC;
          std::cout << "times =" << time << "seconds." << std::endl;
          std::cout << "time = " << timeline.realTimeFromTimestep(itime) << std::endl;
       }
-      //if end time, then exit
-     // if (itime == timeline.maxTimesteps()) { break; }
 
       //calculate the ionic contribution.
-      if (useNodalIion) {
-         actual_Vm = reactionWrapper.getVmReadwrite() ; //should be a memcpy
-         reactionWrapper.Calc();
-      } else {
-         rf->Calc(gf_Vm);
-      }
-      
-      //add stimulii
+      v_new = reactionWrapper.getVmReadwrite() ; //should be a memcpy
+      reactionWrapper.Calc();
+  
+      //Compute stimulus contribution
       stims.updateTime(timeline.realTimeFromTimestep(itime));
-      
-      //compute the Iion and stimulus contribution
       c->Update();
       c->Assemble();
-      //form Ax=b (A=LHS_mat, x=actual_Vm, b=actual_b)
-      a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, actual_Vm, actual_b, 1);
 
+      //Form Lv=R (L=LHS_mat, v=v_new(gf_Vm), R=actual_b(c))
+      a->FormLinearSystem(ess_tdof_list, gf_Vm, *c, LHS_mat, v_new, actual_b, 1);
 
-      //compute the RHS matrix contribution
-      // actual_old = RHS_mat * actual_Vm   
-      RHS_mat.Mult(actual_Vm, actual_old);
+      //compute the RHS matrix Iion contribution
+      // actual_old = RHS_mat * (v_new + dt * Iion)  
+      RHS_mat.Mult(v_new+dt*reactionWrapper.getIionReadonly(), actual_old);
       actual_b += actual_old;
 
-      //compute the Iion contribution
-      if (useNodalIion)
-      {
-         //actual_old = Iion_mat * Iion
-         Iion_mat.Mult(reactionWrapper.getIionReadonly(), actual_old);
-         actual_b += actual_old;
-      }
+      //Solve the linear system LHS_mat * v_new = b
+      pcg.Mult(actual_b, v_new);
 
-      //solve the matrix
-      pcg.Mult(actual_b, actual_Vm);
-
-      a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);
+      //Recover the solution v_new as a grid function gf_Vm
+      a->RecoverFEMSolution(v_new, *c, gf_Vm);
 
       itime++;
+
+      //output if appropriate
+      if ((itime % timeline.timestepFromRealTime(outputRate)) == 0)
+      {
+         pd.SetCycle(itime);
+         pd.SetTime(timeline.realTimeFromTimestep(itime));
+         pd.Save();
+      }
+
       first=false;
    }
-   /*
-   const char *petscrc_file = "";
-   MFEMInitializePetsc(NULL,NULL,petscrc_file,NULL); 
-   MFEMFinalizePetsc();
-   */
+
    // 14. Free the used memory.
    delete M_test;
-   //delete petscrc_file;
    delete a;
    delete b;
    delete c;
    delete pfespace;
    if (order > 0) { delete fec; }
    delete mesh, pmesh, pmeshpart;
-   
    return 0;
 }
