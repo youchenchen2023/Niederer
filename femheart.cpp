@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
    b->FormSystemMatrix(ess_tdof_list, RHS_mat);
 
    //Set up the Iion term
-   ConstantCoefficient coe_dt(-dt);
+   ConstantCoefficient coe_dt(dt);
    ParBilinearForm *Iion = new ParBilinearForm(pfespace); 
    Iion->AddDomainIntegrator(new MassIntegrator(coe_dt));
    Iion->Update(pfespace);  
