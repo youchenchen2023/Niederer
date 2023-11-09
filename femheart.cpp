@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
    double initVm;
    objectGet(obj, "init_vm", initVm, "-83");
 
-   bool useNodalIion;
-   objectGet(obj, "nodal_ion", useNodalIion, "1");
+   bool useNodalIion = true;
+   //objectGet(obj, "nodal_ion", useNodalIion, "1");
 
    StimulusCollection stims(dt);
    {
@@ -407,7 +407,7 @@ int main(int argc, char *argv[])
       Vector sigma_m_neg_vec(3);
       for (int jj=0; jj<3; jj++)
       {
-         double value = sigma_m[jj]*dt/2/Bm/Cm;
+         double value = sigma_m[jj]*dt/Bm/Cm;
          sigma_m_pos_vec[jj] = value;
          sigma_m_neg_vec[jj] = -value;
       }
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
 
    ConstantCoefficient one(1.0);
    ParBilinearForm *b = new ParBilinearForm(pfespace);
-   b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
+   //b->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_neg_coeffs));
    b->AddDomainIntegrator(new MassIntegrator(one));
    b->Assemble();
    // This creates the linear algebra problem.
