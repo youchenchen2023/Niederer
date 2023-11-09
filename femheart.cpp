@@ -91,10 +91,10 @@ int main(int argc, char *argv[])
    OBJECT* obj = object_find("femheart", "HEART");
    assert(obj != NULL);
 
-   StartTimer("Read the mesh");
+   //StartTimer("Read the mesh");
    // Read shared global mesh
    mfem::Mesh *mesh = ecg_readMeshptr(obj, "mesh");
-   EndTimer();
+   //EndTimer();
 
    int dim = mesh->Dimension();
 
