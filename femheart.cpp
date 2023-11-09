@@ -31,19 +31,6 @@ using namespace mfem;
 
 MPI_Comm COMM_LOCAL = MPI_COMM_WORLD;
 
-std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
-
-void StartTimer(const std::string& label) {
-    start_time = std::chrono::high_resolution_clock::now();
-    std::cout << "Started timer: " << label << std::endl;
-}
-
-void EndTimer() {
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
-    std::cout << "Elapsed time: " << duration_ << " milliseconds" << std::endl;
-}
-
 //Stolen from SingleCell
 class Timeline
 {
@@ -513,7 +500,7 @@ int main(int argc, char *argv[])
 
       //solve the matrix
       pcg.Mult(actual_b, actual_Vm);
-      
+
       a->RecoverFEMSolution(actual_Vm, *c, gf_Vm);
 
       itime++;
