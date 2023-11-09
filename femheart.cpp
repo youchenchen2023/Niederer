@@ -202,11 +202,11 @@ int main(int argc, char *argv[])
 
      To solve this, I use a BackEuler method:
 
-     div(sigma_m*grad(Vm_new) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion - Istim
+     div(sigma_m*grad(Vm_new) = Bm*Cm*[(Vm_new-Vm_old)/dt + Iion - Istim]
 
      with some algebra, that comes to
 
-     {1+dt/(Bm*Cm)*(div sigma_m*grad)}*Vm_new = {1}*Vm_old - dt*Iion + dt*Istim
+     {1+dt/(Bm*Cm)*(-div sigma_m*grad)}*Vm_new = {1}*Vm_old - dt*Iion + dt*Istim
 
      Each {} is a matrix that is done with FEM.
 
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
       Vector sigma_m_vec(3);
       for (int jj=0; jj<3; jj++)
       {
-         double value = -sigma_m[jj]*dt/Bm/Cm;
+         double value = sigma_m[jj]*dt/Bm/Cm;
          sigma_m_vec[jj] = value;
       }
       sigma_m_coeffs.heartConductivities_[1] = sigma_m_vec;
