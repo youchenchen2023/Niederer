@@ -346,7 +346,6 @@ int main(int argc, char *argv[])
    fec = new H1_FECollection(order, dim);
    // ...and corresponding FES
    ParFiniteElementSpace *pfespace = new ParFiniteElementSpace(pmesh, fec);
-   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec);
    std::cout << "[" << my_rank << "] Number of finite element unknowns: "
 	     << pfespace->GetTrueVSize() << std::endl;
 
