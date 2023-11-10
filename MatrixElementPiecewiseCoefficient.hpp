@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <memory>
 
-mfem::DenseMatrix quat2rot(const mfem::Vector& q);
+const mfem::DenseMatrix quat2rot(const mfem::Vector& q);
 
 class MatrixElementPiecewiseCoefficient : public mfem::MatrixCoefficient
 {
