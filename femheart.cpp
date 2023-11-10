@@ -400,19 +400,18 @@ int main(int argc, char *argv[])
 
    ParBilinearForm *b = new ParBilinearForm(pfespace);
    b->AddDomainIntegrator(new MassIntegrator(one));
-   b->Update(pfespace);
+   b->Update(pfespace);  // Update the @a FiniteElementSpace and delete all data associated with the old one.
    b->Assemble();
-   // This creates the linear algebra problem.
    HypreParMatrix RHS_mat;
    b->FormSystemMatrix(ess_tdof_list, RHS_mat);
    //EndTimer();
 
    ParBilinearForm *Iion_blf = new ParBilinearForm(pfespace);
-   HypreParMatrix Iion_mat;
    ConstantCoefficient dt_coeff(dt);
    Iion_blf->AddDomainIntegrator(new MassIntegrator(dt_coeff));
    Iion_blf->Update(pfespace);
    Iion_blf->Assemble();
+   HypreParMatrix Iion_mat;
    Iion_blf->FormSystemMatrix(ess_tdof_list,Iion_mat);
 
 

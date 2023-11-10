@@ -2,10 +2,9 @@
 #include <cassert>
 
 
-mfem::DenseMatrix quat2rot(const mfem::Vector& q)
+const mfem::DenseMatrix quat2rot(const mfem::Vector& q)
 {
    MFEM_ASSERT(q.Size()==4, "quat2rot: Dimension of quaternion should be 4");
-   //MFEM_ASSERT(vecisnorm(q), "quat2rot: quaternion is not normalized");
    mfem::DenseMatrix Q(3);
 
    double w=q(0);
@@ -54,8 +53,8 @@ void MatrixElementPiecewiseCoefficient::Eval(
          w2 -= direction(ii)*direction(ii);
       }
       quat(0) = sqrt(w2);
-      mfem::DenseMatrix VVV = quat2rot(quat);
-      MultADAt(VVV,iter->second,K);
+      const mfem::DenseMatrix Q = quat2rot(quat);
+      MultADAt(Q,iter->second,K);//K = Q*diag(iter->second)Q^T
    }
 }
 
