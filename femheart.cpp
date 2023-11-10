@@ -349,9 +349,7 @@ int main(int argc, char *argv[])
    //    corresponding to pfespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
    ParGridFunction gf_Vm(pfespace);
-   ParGridFunction gf_b(pfespace);
    gf_Vm = initVm;
-   gf_b = 0.0;
 
    ParaViewDataCollection pd("V_m", pmesh);
    pd.SetPrefixPath("ParaView");
@@ -393,9 +391,9 @@ int main(int argc, char *argv[])
    
    // Brought out of loop to avoid unnecessary duplication
    ParBilinearForm *a = new ParBilinearForm(pfespace);   // defines a.
-   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs));
-   a->AddDomainIntegrator(new MassIntegrator(one));
-   a->Assemble();
+   a->AddDomainIntegrator(new DiffusionIntegrator(sigma_m_coeffs)); //(Q grad u, grad v) Q means coeff
+   a->AddDomainIntegrator(new MassIntegrator(one));//(Q u, v) Q means coeff
+   a->Assemble();// Assembles the form i.e. sums over all domain/bdr integrators.
    HypreParMatrix LHS_mat;
    a->FormSystemMatrix(ess_tdof_list,LHS_mat);
    //EndTimer();
