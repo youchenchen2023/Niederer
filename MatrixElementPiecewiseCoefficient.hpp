@@ -13,7 +13,6 @@ public:
   //“instantiate mfem::MatrixCoefficient with argument 3”
   MatrixElementPiecewiseCoefficient(std::shared_ptr<mfem::ParGridFunction> x)
   : mfem::MatrixCoefficient(3), p_gf_(x) {}
- 
   //override Eval methods
   /** @brief Evaluate the matrix coefficient in the element described by @a T
       at the point @a ip, storing the result in @a K. */
