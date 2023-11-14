@@ -12,8 +12,6 @@
 using namespace std;
 using namespace mfem;
 
-
-// add a comment
 ReactionWrapper::ReactionWrapper(const double new_dt, const std::vector<std::string> new_objectNames, const ThreadTeam& group, const std::vector<int>& cellTypes)
 : dt(new_dt), threadGroup(group)
 {
