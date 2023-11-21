@@ -42,10 +42,10 @@ void MatrixElementPiecewiseCoefficient::Eval(
    mfem::ElementTransformation& T,
    const mfem::IntegrationPoint &ip)
 {
-   std::unordered_map<int,mfem::Vector>::iterator iter = heartConductivities_.find(T.Attribute);
+   std::unordered_map<int,mfem::Vector>::iterator iter = heartConductivities_.find(T.Attribute); // T.Attribute?
    if (iter != heartConductivities_.end()) {
       mfem::Vector direction(3);
-      p_gf_->GetVectorValue(T.ElementNo, ip, direction);// direction is the values in fiber
+      p_gf_->GetVectorValue(T.ElementNo, ip, direction); // direction is the values in fiber
       mfem::Vector quat(4);
       double w2 = 1;
       for (int ii=0; ii<3; ii++) {
