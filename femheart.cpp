@@ -517,7 +517,7 @@ int main(int argc, char *argv[])
    if (order > 0) { delete fec; }
    delete mesh, pmesh, pmeshpart;
 
-    MPI_Finalize();
+   MPI_Finalize();
    
    return 0;
 }
