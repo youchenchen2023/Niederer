@@ -229,6 +229,7 @@ int main(int argc, char *argv[])
    
    //StartTimer("Setting Attributes");
    mesh->SetAttributes();
+    
   // EndTimer();
 
   // StartTimer("Partition Mesh");
@@ -441,6 +442,7 @@ int main(int argc, char *argv[])
 
    ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
    reactionWrapper.Initialize();
+   g_factoryFromMethodName
    cellTypes.clear();
    reactionNames.clear();
 
