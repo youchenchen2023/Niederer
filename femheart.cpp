@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
    pd.SetTime(0.0);
    pd.Save();
 
-   // Load fiber quaternions from file
+   //Load fiber from file
    std::shared_ptr<GridFunction> flat_fiber_quat;
    ecg_readGF(obj, "fiber", mesh, flat_fiber_quat);
    std::shared_ptr<ParGridFunction> fiber_quat;
@@ -516,6 +516,8 @@ int main(int argc, char *argv[])
    delete pfespace;
    if (order > 0) { delete fec; }
    delete mesh, pmesh, pmeshpart;
+
+    MPI_Finalize();
    
    return 0;
 }
