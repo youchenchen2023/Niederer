@@ -442,7 +442,6 @@ int main(int argc, char *argv[])
 
    ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
    reactionWrapper.Initialize();
-   g_factoryFromMethodName
    cellTypes.clear();
    reactionNames.clear();
 
