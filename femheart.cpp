@@ -364,13 +364,23 @@ int main(int argc, char *argv[])
 
    // Load fiber quaternions from file
    std::shared_ptr<GridFunction> flat_fiber_quat;
-   ecg_readGF(obj, "fibers", mesh, flat_fiber_quat);
+   ecg_readGF(obj, "fiber", mesh, flat_fiber_quat);
    std::shared_ptr<ParGridFunction> fiber_quat;
    fiber_quat = std::make_shared<mfem::ParGridFunction>(pmesh, flat_fiber_quat.get(), pmeshpart);
 
+   std::shared_ptr<GridFunction> flat_sheet_quat;
+   ecg_readGF(obj, "sheet", mesh, flat_sheet_quat);
+   std::shared_ptr<ParGridFunction> sheet_quat;
+   sheet_quat = std::make_shared<mfem::ParGridFunction>(pmesh, flat_sheet_quat.get(), pmeshpart);
+
+   std::shared_ptr<GridFunction> flat_trans_quat;
+   ecg_readGF(obj, "trans", mesh, flat_trans_quat);
+   std::shared_ptr<ParGridFunction> trans_quat;
+   trans_quat = std::make_shared<mfem::ParGridFunction>(pmesh, flat_trans_quat.get(), pmeshpart);
+
    
    // Load conductivity data
-   MatrixElementPiecewiseCoefficient sigma_m_coeffs(fiber_quat);
+   MatrixElementPiecewiseCoefficient sigma_m_coeffs(fiber_quat, sheet_quat, trans_quat);
    Vector sigma_m_vec(3);
    for (int jj=0; jj<3; jj++)
    {
