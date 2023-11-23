@@ -460,7 +460,7 @@ int main(int argc, char *argv[])
    Vector actual_b(pfespace_size);
    Vector actual_old(pfespace_size);
    Vector actual_Iion(pfespace_size);
-   bool first=true;
+
 
    actual_Vm = reactionWrapper.getVmReadonly();
    
@@ -506,7 +506,6 @@ int main(int argc, char *argv[])
          pd.SetTime(timeline.realTimeFromTimestep(itime));
          pd.Save();
       }
-      first=false;
    }
 
    // 14. Free the used memory.
