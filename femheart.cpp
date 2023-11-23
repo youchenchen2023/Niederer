@@ -450,15 +450,16 @@ int main(int argc, char *argv[])
       cellTypes.push_back(material_from_ranklookup[ranklookup]);
    }
 
-   ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes);
+   ReactionWrapper reactionWrapper(dt,reactionNames,defaultGroup,cellTypes); 
    reactionWrapper.Initialize();
    cellTypes.clear();
    reactionNames.clear();
 
-   Vector actual_Vm(pfespace->GetTrueVSize()); 
-   Vector actual_b(pfespace->GetTrueVSize());
-   Vector actual_old(pfespace->GetTrueVSize());
-   Vector actual_Iion(pfespace->GetTrueVSize());
+   int pfespace_size = pfespace->GetTrueVSize();
+   Vector actual_Vm(pfespace_size); 
+   Vector actual_b(pfespace_size);
+   Vector actual_old(pfespace_size);
+   Vector actual_Iion(pfespace_size);
    bool first=true;
 
    actual_Vm = reactionWrapper.getVmReadonly();

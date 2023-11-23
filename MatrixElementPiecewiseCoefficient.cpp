@@ -2,55 +2,20 @@
 #include <cassert>
 
 
-const mfem::DenseMatrix quat2rot(const mfem::Vector& q)
-{
-   MFEM_ASSERT(q.Size()==4, "quat2rot: Dimension of quaternion should be 4");
-   mfem::DenseMatrix Q(3);
-
-   double w=q(0);
-   double x=q(1);
-   double y=q(2);
-   double z=q(3);
-
-   double x2=x*x;
-   double y2=y*y;
-   double z2=z*z;
-   double xy=x*y;
-   double xz=x*z;
-   double yz=y*z;
-   double wx=w*x;
-   double wy=w*y;
-   double wz=w*z;
-
-   Q(0,0)=1-2*y2-2*z2;
-   Q(1,0)=2*xy-2*wz;
-   Q(2,0)=2*xz+2*wy;
-
-   Q(0,1)=2*xy+2*wz;
-   Q(1,1)=1-2*x2-2*z2;
-   Q(2,1)=2*yz-2*wx;
-
-   Q(0,2)=2*xz-2*wy;
-   Q(1,2)=2*yz+2*wx;
-   Q(2,2)=1-2*x2-2*y2;
-
-   return Q;
-}
-
 void MatrixElementPiecewiseCoefficient::Eval(
    mfem::DenseMatrix &K,
    mfem::ElementTransformation& T,
    const mfem::IntegrationPoint &ip)
 {
-   std::unordered_map<int,mfem::Vector>::iterator iter = heartConductivities_.find(T.Attribute); // T.Attribute?
+   std::unordered_map<int,mfem::Vector>::iterator iter = heartConductivities_.find(T.Attribute); // Myocyte type
    if (iter != heartConductivities_.end()) {
       mfem::DenseMatrix Q(3);
       mfem::Vector direction(3);
-      p_gf_->GetVectorValue(T.ElementNo, ip, direction); // direction is the values in fiber
+      p_gf_->GetVectorValue(T.ElementNo, ip, direction); // direction is the direction of fiber
       Q.SetCol(0, direction);
-      p_gf_->GetVectorValue(T.ElementNo, ip, direction);
+      p_gf_->GetVectorValue(T.ElementNo, ip, direction); // direction is the direction of sheet
       Q.SetCol(1, direction);
-      p_gf_->GetVectorValue(T.ElementNo, ip, direction);
+      p_gf_->GetVectorValue(T.ElementNo, ip, direction); // direction is the direction of trans
       Q.SetCol(2, direction);
       MultADAt(Q,iter->second,K);//K = Q*diag(iter->second)Q^T
    }
