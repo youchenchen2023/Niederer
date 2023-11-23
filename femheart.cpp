@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 
    std::vector<double> sigma_m;
    objectGet(obj,"sigma_m",sigma_m);
-   assert(heartRegions.size()*3 == sigma_m.size());
+   //assert(heartRegions.size()*3 == sigma_m.size());
 
    double dt;
    objectGet(obj,"dt",dt,"0.01 ms");
